@@ -5,7 +5,7 @@ double _designW = 360;
 double _designH = 640;
 double _designD = 3;
 
-void setDesignWHD(double w, double h, {double density = 3.0}) {
+void setDesignWHD(double? w, double? h, {double? density = 3.0}) {
   _designW = w ?? _designW;
   _designH = h ?? _designH;
   _designD = density ?? _designD;
@@ -18,7 +18,7 @@ class ScreenUtil {
   double _statusBarHeight = 0;
   double _bottomBarHeight = 0;
   double _appBarHeight = 0;
-  MediaQueryData _mediaQueryData;
+  MediaQueryData? _mediaQueryData;
 
   static final ScreenUtil _singleton = ScreenUtil();
 
@@ -58,7 +58,7 @@ class ScreenUtil {
   double get bottomBarHeight => _bottomBarHeight;
 
   // media Query Data
-  MediaQueryData get mediaQueryData => _mediaQueryData;
+  MediaQueryData? get mediaQueryData => _mediaQueryData;
 
   // screen width
   static double getScreenW(BuildContext context) {

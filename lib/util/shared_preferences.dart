@@ -25,7 +25,7 @@ class SPref {
     await prefs.setBool(key, value);
   }
 
-  Future<bool> getBool(String key) async {
+  dynamic getBool(String key) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(key);
   }

@@ -5,7 +5,7 @@ class ModuleName {
     this.imagePath,
   });
 
-  String id;
-  String name;
-  String imagePath;
+  String? id;
+  String? name;
+  String? imagePath;
 }

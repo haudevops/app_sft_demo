@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 class ScaleAnimation extends StatefulWidget {
   const ScaleAnimation({this.child});
 
-  final Widget child;
+  final Widget? child;
 
   @override
   _ScaleAnimationState createState() => _ScaleAnimationState();
 }
 
 class _ScaleAnimationState extends State<ScaleAnimation> with SingleTickerProviderStateMixin {
-  AnimationController animationController;
-  Animation<double> animation;
+  late AnimationController animationController;
+  late Animation<double> animation;
 
   @override
   void initState() {

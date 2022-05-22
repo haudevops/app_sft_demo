@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class CustomSnackBar extends StatefulWidget {
   const CustomSnackBar.success({
-    @required this.message,
+    required this.message,
     this.icon = const Icon(
       Icons.check_circle,
       color: Colors.white,
@@ -18,7 +18,7 @@ class CustomSnackBar extends StatefulWidget {
   });
 
   const CustomSnackBar.info({
-    @required this.message,
+    required this.message,
     this.icon = const Icon(
       Icons.sentiment_neutral,
       color: Color(0x15000000),
@@ -33,7 +33,7 @@ class CustomSnackBar extends StatefulWidget {
   });
 
   const CustomSnackBar.error({
-    @required this.message,
+    required this.message,
     this.icon = const Icon(
       Icons.error_outline,
       color: Color(0x15000000),

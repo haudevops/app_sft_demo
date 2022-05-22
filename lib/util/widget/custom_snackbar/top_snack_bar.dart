@@ -9,11 +9,11 @@ Future<void> showTopSnackBar(
   Duration hideOutAnimationDuration = const Duration(milliseconds: 550),
   Duration displayDuration = const Duration(milliseconds: 3000),
   double additionalTopPadding = 16.0,
-  VoidCallback onTap,
-  OverlayState overlayState,
+  VoidCallback? onTap,
+  OverlayState? overlayState,
 }) async {
   overlayState ??= Overlay.of(context);
-  OverlayEntry overlayEntry;
+  late OverlayEntry overlayEntry;
   overlayEntry = OverlayEntry(
     builder: (context) {
       return TopSnackBar(
@@ -22,7 +22,7 @@ Future<void> showTopSnackBar(
           hideOutAnimationDuration: hideOutAnimationDuration,
           displayDuration: displayDuration,
           additionalTopPadding: additionalTopPadding,
-          onTap: onTap,
+          onTap: () => onTap,
           child: child);
     },
   );
@@ -31,13 +31,13 @@ Future<void> showTopSnackBar(
 
 class TopSnackBar extends StatefulWidget {
   const TopSnackBar({
-    @required this.child,
-    @required this.onDismissed,
-    @required this.showOutAnimationDuration,
-    @required this.hideOutAnimationDuration,
-    @required this.displayDuration,
-    @required this.additionalTopPadding,
-    Key key,
+    required this.child,
+    required this.onDismissed,
+    required this.showOutAnimationDuration,
+    required this.hideOutAnimationDuration,
+    required this.displayDuration,
+    required this.additionalTopPadding,
+    Key? key,
     this.onTap,
   }) : super(key: key);
 
@@ -47,7 +47,7 @@ class TopSnackBar extends StatefulWidget {
   final Duration hideOutAnimationDuration;
   final Duration displayDuration;
   final double additionalTopPadding;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   _TopSnackBarState createState() => _TopSnackBarState();
@@ -55,9 +55,9 @@ class TopSnackBar extends StatefulWidget {
 
 class _TopSnackBarState extends State<TopSnackBar>
     with SingleTickerProviderStateMixin {
-  Animation offsetAnimation;
-  AnimationController animationController;
-  double topPosition;
+  late Animation offsetAnimation;
+  late AnimationController animationController;
+  double? topPosition;
 
   @override
   void initState() {

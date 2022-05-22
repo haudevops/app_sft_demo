@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class TapBounceContainer extends StatefulWidget {
-  const TapBounceContainer({@required this.child, this.onTap, Key key})
+  const TapBounceContainer({required this.child, this.onTap, Key? key})
       : super(key: key);
 
-  final Widget child;
-  final VoidCallback onTap;
+  final Widget? child;
+  final VoidCallback? onTap;
 
   @override
   _TapBounceContainerState createState() => _TapBounceContainerState();
@@ -13,8 +13,8 @@ class TapBounceContainer extends StatefulWidget {
 
 class _TapBounceContainerState extends State<TapBounceContainer> with SingleTickerProviderStateMixin{
 
-  double _scale;
-  AnimationController _controller;
+  double? _scale;
+  late AnimationController _controller;
   final animationDuration = const Duration(milliseconds: 200);
 
   @override
