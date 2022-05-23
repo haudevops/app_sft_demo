@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:sft_project/util/widget/custom_snackbar/custom_snack_bar.dart';
+import 'package:sft_project/util/widget/custom_snack_bar.dart';
 import 'package:sft_project/util/widget/custom_snackbar/top_snack_bar.dart';
 import 'package:sft_project/util/widget/loading_item.dart';
 
@@ -74,22 +75,24 @@ class BlocProvider<T extends BaseBloc> extends StatefulWidget {
 
   final T? bloc;
   final Widget? child;
-  final bool? userDispose;
+  final bool userDispose;
 
   @override
   _BlocProviderState<T> createState() => _BlocProviderState<T>();
 
-  static T of<T extends BaseBloc>(BuildContext context) {
+  static T? of<T extends BaseBloc>(BuildContext context) {
     final provider = context.findAncestorWidgetOfExactType<BlocProvider<T>>();
-    return provider!.bloc!;
+    return provider?.bloc;
   }
 }
 
 class _BlocProviderState<T> extends State<BlocProvider<BaseBloc>> {
+  final _tts = FlutterTts();
 
   @override
   void initState() {
     super.initState();
+    initTTS();
 
     widget.bloc?.msgSuccessStream.listen((msg) {
       showTopSnackBar(
@@ -108,11 +111,23 @@ class _BlocProviderState<T> extends State<BlocProvider<BaseBloc>> {
           displayDuration: const Duration(milliseconds: 1000));
     });
 
+    widget.bloc?.showSpeakStream.listen(showSpeak);
+  }
+
+  Future showSpeak(String text) async {
+    await _tts.speak(text);
+  }
+
+  Future initTTS() async {
+    await _tts.setLanguage('vi');
+    await _tts.setSpeechRate(1.2);
+    await _tts.setPitch(1);
   }
 
   @override
   void dispose() {
-    if (widget.userDispose!) widget.bloc?.dispose();
+    if (widget.userDispose) widget.bloc?.dispose();
+    _tts.stop();
     super.dispose();
   }
 
