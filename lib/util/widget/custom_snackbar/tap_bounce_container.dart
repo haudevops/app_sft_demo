@@ -44,7 +44,7 @@ class _TapBounceContainerState extends State<TapBounceContainer> with SingleTick
       onTapUp: _onTapUp,
       onPanEnd: _onPanEnd,
       child: Transform.scale(
-        scale: _scale,
+        scale: _scale!,
         child: widget.child,
       ),
     );

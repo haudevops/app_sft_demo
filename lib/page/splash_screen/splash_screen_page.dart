@@ -5,6 +5,7 @@ import 'package:sft_project/routes/screen_argument.dart';
 import 'package:sft_project/util/constants.dart';
 import 'package:sft_project/util/prefs_util.dart';
 import 'package:sft_project/util/screen_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreenPage extends StatefulWidget {
   const SplashScreenPage({Key? key, required this.data}) : super(key: key);
@@ -21,28 +22,29 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
   String? _password;
 
   void _checkTokenToNav() async {
-    // await Future.delayed(const Duration(seconds: 2), () {
-    //   _token = PrefsUtil.getString(Constants.TOKEN);
-    //   print('Token: ${_token.toString()}');
-    //   if (_token != null && _token!.isNotEmpty) {
-    //     print('Token: $_token'.toString());
-    //     Navigator.pushNamedAndRemoveUntil(
-    //         context, NavPage.routeName, (Route<dynamic> route) => false);
-    //   } else {
-    //     Navigator.pushNamed(context, LoginPage.routeName,
-    //         arguments: ScreenArguments(arg1: false));
-    //   }
-    // });
-
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     await Future.delayed(const Duration(seconds: 2), () {
-      if (_userName != null && _password != null) {
+      _token = prefs.getString(Constants.TOKEN);
+      print('Token: ${_token.toString()}');
+      if (_token != null && _token!.isNotEmpty) {
         Navigator.pushNamedAndRemoveUntil(
             context, NavPage.routeName, (Route<dynamic> route) => false, arguments: ScreenArguments(arg1: _userName, arg2: _password));
       } else {
-        Navigator.pushNamed(context, LoginPage.routeName,
+        prefs.clear();
+        Navigator.pushNamedAndRemoveUntil(context, LoginPage.routeName, (Route<dynamic> route) => false,
             arguments: ScreenArguments(arg1: false, arg2: '', arg3: ''));
       }
     });
+
+    // await Future.delayed(const Duration(seconds: 2), () {
+    //   if (_userName != null && _password != null) {
+    //     Navigator.pushNamedAndRemoveUntil(
+    //         context, NavPage.routeName, (Route<dynamic> route) => false, arguments: ScreenArguments(arg1: _userName, arg2: _password));
+    //   } else {
+    //     Navigator.pushNamed(context, LoginPage.routeName,
+    //         arguments: ScreenArguments(arg1: false, arg2: '', arg3: ''));
+    //   }
+    // });
   }
 
   void initState() {

@@ -5,6 +5,7 @@ import 'package:sft_project/page/home/home_page.dart';
 import 'package:sft_project/page/setting/setting_page.dart';
 import 'package:sft_project/routes/screen_argument.dart';
 import 'package:sft_project/util/app_color.dart';
+import 'package:sft_project/util/keep_alive_page.dart';
 import 'package:sft_project/util/screen_util.dart';
 import 'package:sft_project/util/widget/custom_snackbar/custom_snack_bar.dart';
 import 'package:sft_project/util/widget/custom_snackbar/top_snack_bar.dart';
@@ -14,10 +15,18 @@ import 'package:sft_project/page/release_pallet/release_pallet_page.dart';
 import 'package:sft_project/page/stow/stow_page.dart';
 import 'package:sft_project/page/stow_direct/stow_direct_page.dart';
 import 'package:sft_project/page/transfer_transport/transfer_transport_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
+
+import '../routes/screen_argument.dart';
+import '../util/app_color.dart';
+import '../util/constants.dart';
+import 'home/home_page.dart';
+import 'login/login_page.dart';
+import 'setting/setting_page.dart';
+import 'splash_screen/splash_screen_page.dart';
 
 class NavPage extends StatefulWidget {
   const NavPage({Key? key, required this.data}) : super(key: key);
@@ -32,7 +41,6 @@ class _NavPageState extends State<NavPage> {
   int _currentIndex = 0;
   bool _isListening = false;
 
-  // stt.SpeechToText _speech;
   SpeechToText _speech = SpeechToText();
   String _text = '';
   String lastError = '';
@@ -41,8 +49,9 @@ class _NavPageState extends State<NavPage> {
     'ĐỊNH VỊ',
     'THAY ĐỔI ĐỊNH VỊ',
     'LUÂN CHUYỂN',
-    'LẤY HÀNG',
+    'LẤY HÀNG SAU ĐÓNG GÓI',
     'LƯU KHO',
+    'TẬP KẾT',
     'NHẬN HÀNG',
     'CÀI ĐẶT',
     'ĐĂNG XUẤT',
@@ -51,49 +60,22 @@ class _NavPageState extends State<NavPage> {
 
   String? userName;
   String? password;
+  late PageController _pageController;
 
-  void onTabTapped(int index) {
+
+  void onPageChange(int index) {
     setState(() {
       _currentIndex = index;
     });
   }
 
-  // void onListen() async {
-  //   if (!_isListening) {
-  //     bool available = await _speech.initialize(
-  //       onStatus: (val) => print('onStatus: $val'),
-  //       onError: (val) {
-  //         print('onError: $val');
-  //         setState(() {
-  //           _isListening = false;
-  //         });
-  //       },
-  //     );
-  //     if (available) {
-  //       setState(() {
-  //         _isListening = true;
-  //       });
-  //       _speech.listen(
-  //         onResult: (val) {
-  //           if (val.finalResult) {
-  //             setState(() {
-  //               _text = val.recognizedWords.toUpperCase();
-  //               print('textToSpeech: $_text');
-  //               _isListening = false;
-  //               _checkTextVoice(context, _text);
-  //             });
-  //           }
-  //         },
-  //         localeId: 'vi',
-  //       );
-  //     }
-  //   } else {
-  //     setState(() {
-  //       _isListening = false;
-  //     });
-  //     _speech.stop();
-  //   }
-  // }
+  void _updateTabSelection(int index) {
+    setState(() {
+      _currentIndex = index;
+      _pageController.animateToPage(index,
+          duration: Duration(milliseconds: 10), curve: Curves.ease);
+    });
+  }
 
   void _showErrorMsg(BuildContext context, String moduleName) {
     showTopSnackBar(
@@ -143,7 +125,7 @@ class _NavPageState extends State<NavPage> {
       case 'LƯU KHO':
         Navigator.pushNamed(context, StowDirectPage.routeName);
         break;
-      case 'LẤY HÀNG':
+      case 'LẤY HÀNG SAU ĐÓNG GÓI':
         Navigator.pushNamed(context, PackPickPage.routeName);
         break;
       case 'NHẬN HÀNG':
@@ -159,7 +141,8 @@ class _NavPageState extends State<NavPage> {
         Navigator.pushNamed(context, HomePage.routeName);
         break;
       case 'ĐĂNG XUẤT':
-        Navigator.pushNamed(context, ReceivedPage.routeName);
+      case 'ĐĂNG XUẤT KHỎI TRÁI ĐẤT':
+        _checkLogout();
         break;
       default:
         break;
@@ -204,11 +187,11 @@ class _NavPageState extends State<NavPage> {
   void _startListening() async {
     _speech.listen(
         onResult: _onSpeechResult,
-        pauseFor: Duration(seconds: 2),
-        partialResults: true,
+        listenFor: Duration(seconds: 3),
+        pauseFor: Duration(seconds: 3),
         localeId: 'vi',
         cancelOnError: true,
-        listenMode: ListenMode.confirmation);
+    );
     setState(() {});
   }
 
@@ -230,58 +213,77 @@ class _NavPageState extends State<NavPage> {
     });
   }
 
+  void _checkLogout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if(prefs.getString(Constants.FACE_ID) != null){
+      print('out true');
+      Navigator.pushNamed(context, LoginPage.routeName, arguments: ScreenArguments(arg1: prefs.getString(Constants.FACE_ID), arg2: userName, arg3: password));
+    }else{
+      print('out false');
+      prefs.clear();
+      Navigator.pushNamed(context, SplashScreenPage.routeName, arguments: ScreenArguments(arg1: null, arg2: null));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    // _speech = stt.SpeechToText();
     _initSpeech();
     userName = widget.data.arg1;
     password = widget.data.arg2;
+    _pageController = PageController(
+      initialPage: 0,
+      keepPage: true,
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _speech.cancel();
+    _pageController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _navigateToScreen(_currentIndex),
-      bottomNavigationBar: Container(
-        height: ScreenUtil.getInstance().getAdapterSize(60),
-        child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          clipBehavior: Clip.antiAlias,
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _currentIndex,
-            backgroundColor: AppColor.colorBackgroundDrak,
-            onTap: (index) => setState(() {
-              _currentIndex = index;
-            }),
-            items: [
-              BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.home,
-                  color: _currentIndex == 0
-                      ? AppColor.bottomNavigationSelectedColor
-                      : AppColor.bottomNavigationDefaultColor,
-                ),
-                // ignore: deprecated_member_use
-                label: 'Home',
+      backgroundColor: AppColor.colorBackgroundContainerDark,
+      body: _pageView(),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        clipBehavior: Clip.antiAlias,
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _currentIndex,
+          backgroundColor: AppColor.colorBackgroundDrak,
+          onTap: _updateTabSelection,
+          selectedItemColor: Colors.yellow,
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.home,
+                color: _currentIndex == 0
+                    ? AppColor.bottomNavigationSelectedColor
+                    : AppColor.bottomNavigationDefaultColor,
               ),
-              BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.settings,
-                  color: _currentIndex == 1
-                      ? AppColor.bottomNavigationSelectedColor
-                      : AppColor.bottomNavigationDefaultColor,
-                ),
-                // ignore: deprecated_member_use
-                label: 'Setting',
+              // ignore: deprecated_member_use
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.settings,
+                color: _currentIndex == 1
+                    ? AppColor.bottomNavigationSelectedColor
+                    : AppColor.bottomNavigationDefaultColor,
               ),
-            ],
-          ),
+              // ignore: deprecated_member_use
+              label: 'Setting',
+            ),
+          ],
         ),
       ),
       floatingActionButtonLocation:
-          FloatingActionButtonLocation.miniCenterDocked,
+          FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Padding(
         padding: EdgeInsets.all(ScreenUtil.getInstance().getAdapterSize(5)),
         child: FloatingActionButton(
@@ -305,16 +307,15 @@ class _NavPageState extends State<NavPage> {
     );
   }
 
-  Widget _navigateToScreen(int index) {
-    switch (index) {
-      case 0:
-        return HomePage();
-      case 1:
-        return SettingPage(
-          data: ScreenArguments(arg1: userName, arg2: password),
-        );
-      default:
-        return HomePage();
-    }
+  Widget _pageView() {
+    return PageView(
+      controller: _pageController,
+      physics: NeverScrollableScrollPhysics(),
+      onPageChanged: onPageChange,
+      children: <Widget>[
+        KeepAlivePage(child: HomePage()),
+        KeepAlivePage(child: SettingPage(data: ScreenArguments(arg1: userName, arg2: password),)),
+      ],
+    );
   }
 }

@@ -4,9 +4,8 @@ import 'package:sft_project/page/splash_screen/splash_screen_page.dart';
 import 'package:sft_project/routes/screen_argument.dart';
 import 'package:sft_project/util/app_color.dart';
 import 'package:sft_project/util/constants.dart';
-import 'package:sft_project/util/prefs_util.dart';
 import 'package:sft_project/util/screen_util.dart';
-import 'package:sft_project/util/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({Key? key, required this.data}) : super(key: key);
@@ -22,9 +21,13 @@ class _SettingPageState extends State<SettingPage> {
   String? userName;
   String? password;
 
+
   void _checkBool() async {
-    if (SPref.instance.getBool(Constants.FACE_ID) != null) {
-      _checkFaceID = await SPref.instance.getBool(Constants.FACE_ID);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(Constants.FACE_ID) != null) {
+      setState(() {
+        _checkFaceID = prefs.getBool(Constants.FACE_ID)!;
+      });
     } else {
       setState(() {
         _checkFaceID = false;
@@ -34,13 +37,14 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   void _checkLogout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     if(_checkFaceID){
       print('out true');
       Navigator.pushNamed(context, LoginPage.routeName, arguments: ScreenArguments(arg1: _checkFaceID, arg2: userName, arg3: password));
     }else{
       print('out false');
-      PrefsUtil.clear();
-      Navigator.pushNamed(context, SplashScreenPage.routeName);
+      prefs.clear();
+      Navigator.pushNamed(context, SplashScreenPage.routeName, arguments: ScreenArguments(arg1: null, arg2: null));
     }
   }
 
@@ -48,9 +52,9 @@ class _SettingPageState extends State<SettingPage> {
   @override
   void initState() {
     super.initState();
-    _checkBool();
     userName = widget.data.arg1;
     password = widget.data.arg2;
+    _checkBool();
   }
 
   @override
@@ -119,11 +123,7 @@ class _SettingPageState extends State<SettingPage> {
                 child: Switch(
                   value: _checkFaceID,
                   onChanged: (val) {
-                    setState(() {
-                      _checkFaceID = val;
-                      print('Toggle FaceID: $_checkFaceID');
-                      SPref.instance.setBool(Constants.FACE_ID, _checkFaceID);
-                    });
+                    _tapSwitchFaceID(val);
                   },
                   activeColor: Colors.yellow,
                 ),
@@ -133,6 +133,15 @@ class _SettingPageState extends State<SettingPage> {
         ),
       ),
     );
+  }
+
+  void _tapSwitchFaceID(bool val) async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _checkFaceID = val;
+      print('Toggle FaceID: $_checkFaceID');
+      prefs.setBool(Constants.FACE_ID, _checkFaceID);
+    });
   }
 
   Widget _buildInfoUser() {

@@ -7,7 +7,10 @@ import 'package:sft_project/page/navigation_bottom_page.dart';
 import 'package:sft_project/routes/screen_argument.dart';
 import 'package:sft_project/util/constants.dart';
 import 'package:sft_project/util/screen_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../util/constants.dart';
+import '../../util/constants.dart';
 import '../../util/prefs_util.dart';
 
 enum _SupportState {
@@ -39,11 +42,14 @@ class _LoginPageState extends State<LoginPage> {
   final _userNameKey = GlobalKey<FormState>();
   final _userPasswordKey = GlobalKey<FormState>();
   late bool _checkShowFaceID;
-  var _userName;
-  var _password;
+  String? _userName;
+  String? _password;
   String? _userNameResponse;
   String? _passwordResponse;
   String _token = '';
+  int _countDown = 30;
+  bool _checkCountDown = false;
+  Timer? timer;
 
   @override
   void initState() {
@@ -56,14 +62,38 @@ class _LoginPageState extends State<LoginPage> {
               ? _SupportState.supported
               : _SupportState.unsupported),
         );
+    _userName = PrefsUtil.getString(Constants.USER_NAME);
+    print('User Token: $_userName');
+    _password = PrefsUtil.getString(Constants.PASSWORD);
+    print('Password Token: ${PrefsUtil.getString(Constants.PASSWORD)}');
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    timer?.cancel();
+  }
+
+  void _actionCountDownTimer(){
+    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+        _countDown--;
+      if(_countDown == 0){
+        setState(() {
+          _checkCountDown = false;
+        });
+        timer.cancel();
+      }
+      print('Count Down: $_countDown');
+    });
   }
 
   Future<void> _authenticateWithBiometrics() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     bool authenticated = false;
     try {
       setState(() {
         _isAuthenticating = true;
-        _authorized = 'Authenticating';
       });
 
       authenticated = await auth.authenticate(
@@ -71,15 +101,23 @@ class _LoginPageState extends State<LoginPage> {
           useErrorDialogs: true,
           biometricOnly: true,
           stickyAuth: true,
+          sensitiveTransaction: false,
           androidAuthStrings: AndroidAuthMessages(
             signInTitle: 'Mở khóa',
+            biometricSuccess: 'Thành công',
             biometricHint: '',
             cancelButton: 'Hủy',
+              biometricRequiredTitle: ' OK',
+            biometricNotRecognized: 'OK',
+            deviceCredentialsRequiredTitle: 'OK',
+            deviceCredentialsSetupDescription: 'OK',
+
           ));
+
       if (authenticated) {
-        setState((){
-          _userNameController.text = _userNameResponse ?? '';
-          _passwordController.text = _passwordResponse ?? '';
+        setState(() {
+          _userNameController.text = prefs.getString(Constants.USER_NAME)!;
+          _passwordController.text = prefs.getString(Constants.PASSWORD)!;
         });
         print(
             'Login: \nuserName: ${_userNameController.text}\npassword: ${_passwordController.text}');
@@ -87,33 +125,32 @@ class _LoginPageState extends State<LoginPage> {
       }
       setState(() {
         _isAuthenticating = false;
-        _checkShowFaceID = false;
+        _checkShowFaceID = true;
         _authorized = 'Authenticating';
       });
     } on PlatformException catch (e) {
-      print(e);
+      print(e.message);
       setState(() {
         _isAuthenticating = false;
         _authorized = 'Error - ${e.message}';
+        _checkCountDown = true;
       });
+      _actionCountDownTimer();
       return;
     }
     if (!mounted) {
       return;
     }
-
-    final String message = authenticated ? 'Authorized' : 'Not Authorized';
-    setState(() {
-      _authorized = message;
-    });
   }
 
   Future<void> checkLogin(String userName, String password) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     if (userName.isNotEmpty && password.isNotEmpty) {
-      _userName = PrefsUtil.putString(Constants.USER_NAME, userName);
-      _password = PrefsUtil.putString(Constants.PASSWORD, password);
+      prefs.setString(Constants.USER_NAME, userName);
+      prefs.setString(Constants.PASSWORD, password);
       _token = userName + password;
       print('Token: $_token');
+      prefs.setString(Constants.TOKEN, _token);
       await PrefsUtil.putString(Constants.TOKEN, _token);
       Navigator.pushNamedAndRemoveUntil(
               context, NavPage.routeName, (Route<dynamic> route) => false,
@@ -123,6 +160,8 @@ class _LoginPageState extends State<LoginPage> {
           _checkShowFaceID = true;
           _userName = PrefsUtil.getString(Constants.USER_NAME);
           _password = PrefsUtil.getString(Constants.PASSWORD);
+          _token = PrefsUtil.getString(Constants.TOKEN)!;
+          print('Token: $_token');
         });
         print('$_userName  $_password');
         _userNameController.clear();
@@ -167,6 +206,11 @@ class _LoginPageState extends State<LoginPage> {
                           const BorderSide(width: 2, color: Colors.pinkAccent),
                       borderRadius: BorderRadius.circular(15),
                     ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide:
+                      const BorderSide(width: 2, color: Colors.red),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                   onFieldSubmitted: (value) {
                     if (_userNameKey.currentState!.validate()) {
@@ -203,6 +247,11 @@ class _LoginPageState extends State<LoginPage> {
                     focusedBorder: OutlineInputBorder(
                       borderSide:
                           const BorderSide(width: 2, color: Colors.pinkAccent),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide:
+                      const BorderSide(width: 2, color: Colors.red),
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
@@ -248,7 +297,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Center(
                   child: IconButton(
                     onPressed: () {
-                      print('OK');
+                      _checkCountDown ? print('On timer count down') :
                       _authenticateWithBiometrics();
                     },
                     icon: Icon(
@@ -258,6 +307,10 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
+              ),
+              Visibility(
+                visible: _checkCountDown,
+                child: Text('Vui lòng thử lại trong $_countDown giây'),
               ),
             ],
           ),

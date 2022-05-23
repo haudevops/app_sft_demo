@@ -2,15 +2,22 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'synchronized/synchronized.dart';
+
 class PrefsUtil {
   static PrefsUtil? _singleton;
   static SharedPreferences? _prefs;
+  static Lock _lock = Lock();
 
   static Future<PrefsUtil?> getInstance() async {
     if (_singleton == null) {
-      var singleton = PrefsUtil._();
-      await singleton._init();
-      _singleton = singleton;
+      await _lock.synchronized(() async {
+        if (_singleton == null) {
+          var singleton = PrefsUtil._();
+          await singleton._init();
+          _singleton = singleton;
+        }
+      });
     }
     return _singleton;
   }
@@ -27,7 +34,7 @@ class PrefsUtil {
   }
 
   /// get obj.
-  static T? getObj<T>(String key, T Function(Map<String, dynamic> v) f, {T? defValue}) {
+  static T? getObj<T>(String key, T f(Map<String, dynamic> v), {T? defValue}) {
     Map<String, dynamic>? map = getObject(key);
     return map == null ? defValue : f(map);
   }
@@ -47,12 +54,13 @@ class PrefsUtil {
   }
 
   /// get obj list.
-  static List<T>? getObjList<T>(String key, T Function(Map v) f) {
+  static List<T>? getObjList<T>(String key, T f(Map v),
+      {List<T>? defValue = const []}) {
     List<Map>? dataList = getObjectList(key);
     List<T>? list = dataList?.map((value) {
       return f(value);
     }).toList();
-    return list;
+    return list ?? defValue;
   }
 
   /// get object list.
@@ -77,10 +85,6 @@ class PrefsUtil {
   /// get bool.
   static bool? getBool(String key, {bool? defValue = false}) {
     return _prefs?.getBool(key) ?? defValue;
-  }
-
-  static bool? getBoolNotDefault(String key) {
-    return _prefs?.getBool(key);
   }
 
   /// put bool.
@@ -109,8 +113,9 @@ class PrefsUtil {
   }
 
   /// get string list.
-  static List<String>? getStringList(String key) {
-    return _prefs?.getStringList(key);
+  static List<String>? getStringList(String key,
+      {List<String>? defValue = const []}) {
+    return _prefs?.getStringList(key) ?? defValue;
   }
 
   /// put string list.
@@ -162,11 +167,4 @@ class PrefsUtil {
   static SharedPreferences? getSp() {
     return _prefs;
   }
-}
-
-double? checkDouble(dynamic value) {
-  if(value is double) return value;
-  if(value is int) return value.toDouble();
-  if(value is String) return double.tryParse(value);
-  return null;
 }
